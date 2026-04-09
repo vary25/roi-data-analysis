@@ -4,6 +4,9 @@ import { calculateMovingAverage, classifyROIValue } from '@/lib/dataProcessing';
 import { predictROI } from '@/lib/prediction';
 import { FilterParams, ROIRecord } from '@/types';
 
+// 标记为动态路由，避免静态生成警告
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
