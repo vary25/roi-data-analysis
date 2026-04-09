@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// 应用信息表
+/// 存储所有投放应用的基础信息
+model App {
+  id          Int      @id @default(autoincrement())
+  appKey      String   @unique @map("app_key") @db.VarChar(50)
+  appName     String   @map("app_name") @db.VarChar(100)
+  appIcon     String?  @map("app_icon") @db.VarChar(255)
+  bundleId    String?  @map("bundle_id") @db.VarChar(100)
+  platform    String   @default("iOS") @db.VarChar(20)
+  url         String?  @db.VarChar(255)
+  category    String?  @db.VarChar(50)
+  status      Int      @default(1)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  /// 关联
+  roiData ROIData[]
+
+  @@map("apps")
+}
+
+/// ROI数据表（简化版）
+/// 从CSV导入，无外键约束
+model ROIData {
+  id          BigInt   @id @default(autoincrement())
+
+  /// 数据日期
+  date        DateTime @db.Date
+
+  /// 维度字段（直接存储字符串，无外键）
+  appKey      String   @map("app_key") @db.VarChar(50)
+  bidType     String   @map("bid_type") @db.VarChar(20)
+  countryCode String   @map("country_code") @db.VarChar(50)
+
+  /// 基础数据
+  installs    Int      @default(0)
+
+  /// ROI数据（8个时间维度，-1表示数据缺失/日期不足，0表示真实0%）
+  roiDay0     Float    @default(-1) @map("roi_day_0")
+  roiDay1     Float    @default(-1) @map("roi_day_1")
+  roiDay3     Float    @default(-1) @map("roi_day_3")
+  roiDay7     Float    @default(-1) @map("roi_day_7")
+  roiDay14    Float    @default(-1) @map("roi_day_14")
+  roiDay30    Float    @default(-1) @map("roi_day_30")
+  roiDay60    Float    @default(-1) @map("roi_day_60")
+  roiDay90    Float    @default(-1) @map("roi_day_90")
+
+  /// 元数据
+  dataSource  String   @default("csv") @map("data_source") @db.VarChar(20)
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  /// 关联（可选）
+  app         App?     @relation(fields: [appKey], references: [appKey])
+
+  /// 复合唯一索引（避免重复数据）
+  @@unique([date, appKey, countryCode, bidType])
+
+  /// 索引优化
+  @@index([date])
+  @@index([appKey])
+  @@index([countryCode])
+  @@index([bidType])
+  @@index([appKey, date])
+  @@index([appKey, countryCode, date])
+
+  @@map("roi_data")
+}
